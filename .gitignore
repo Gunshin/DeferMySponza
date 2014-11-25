@@ -1,0 +1,14 @@
+/external
+
+/demo/*
+!/demo/readme.txt
+!/demo/reprise_fs.glsl
+!/demo/reprise_vs.glsl
+
+RepriseMySponza.sdf
+
+RepriseMySponza/Debug
+
+*.opensdf
+*.sdf
+*.suo
