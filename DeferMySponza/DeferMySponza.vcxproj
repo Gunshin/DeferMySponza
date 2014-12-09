@@ -116,6 +116,8 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MyController.cpp" />
     <ClCompile Include="MyView.cpp" />
+    <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="ShaderProgram.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\external\include\SceneModel\Camera.hpp" />
@@ -130,6 +132,12 @@
     <ClInclude Include="..\external\src\SceneModel\FirstPersonMovement.hpp" />
     <ClInclude Include="MyController.hpp" />
     <ClInclude Include="MyView.hpp" />
+    <ClInclude Include="Shader.hpp" />
+    <ClInclude Include="ShaderProgram.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\demo\defer_fs.glsl" />
+    <None Include="..\demo\defer_vs.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -5,9 +5,7 @@
 !/demo/reprise_fs.glsl
 !/demo/reprise_vs.glsl
 
-RepriseMySponza.sdf
-
-RepriseMySponza/Debug
+DeferMySponza/Debug
 
 *.opensdf
 *.sdf

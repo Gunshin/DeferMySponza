@@ -63,6 +63,12 @@
     <ClCompile Include="..\external\src\SceneModel\Context.cpp">
       <Filter>External\SceneModel</Filter>
     </ClCompile>
+    <ClCompile Include="Shader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ShaderProgram.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MyController.hpp">
@@ -101,5 +107,19 @@
     <ClInclude Include="..\external\src\SceneModel\FirstPersonMovement.hpp">
       <Filter>External\SceneModel</Filter>
     </ClInclude>
+    <ClInclude Include="Shader.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderProgram.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\demo\defer_fs.glsl">
+      <Filter>Shader Files</Filter>
+    </None>
+    <None Include="..\demo\defer_vs.glsl">
+      <Filter>Shader Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
