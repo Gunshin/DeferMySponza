@@ -2,8 +2,8 @@
 
 /demo/*
 !/demo/readme.txt
-!/demo/reprise_fs.glsl
-!/demo/reprise_vs.glsl
+!/demo/defer_fs.glsl
+!/demo/defer_vs.glsl
 
 DeferMySponza/Debug
 
