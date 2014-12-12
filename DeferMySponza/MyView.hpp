@@ -46,7 +46,6 @@ private:
         Vertex(glm::vec3 pos_, glm::vec3 norm_) : position(pos_), normal(norm_) {}
         glm::vec3 position, normal;
     };
-
     GLuint vertexVBO; // VertexBufferObject for the vertex positions
     GLuint elementVBO; // VertexBufferObject for the elements (indices)
 
@@ -86,14 +85,19 @@ private:
     {
         glm::vec3 position;
         float range;
-        glm::vec3 direction;
-        float field_of_view_degrees;
     };
     std::vector<LightData> lights;
     GLuint bufferRender;
+    Mesh lightMesh;
 
-    ShaderProgram shaderProgram;
+    ShaderProgram lightProgram, firstPassProgram;
 
-    void SetBuffer(glm::mat4 projectMat_, glm::vec3 camPos_, LightData light_);
+    GLuint gbufferID;
+    GLuint gbufferTextureBufferIDS[3];
+    GLuint depthStencilRBOID;
 
+    GLuint lbufferID;
+    GLuint lbufferColourRBOID;
+
+    void SetBuffer(glm::mat4 projectMat_, glm::vec3 camPos_);
 };

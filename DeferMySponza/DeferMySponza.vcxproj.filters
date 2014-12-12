@@ -115,10 +115,16 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\demo\defer_fs.glsl">
+    <None Include="..\demo\firstpass_fs.glsl">
       <Filter>Shader Files</Filter>
     </None>
-    <None Include="..\demo\defer_vs.glsl">
+    <None Include="..\demo\firstpass_vs.glsl">
+      <Filter>Shader Files</Filter>
+    </None>
+    <None Include="..\demo\light_fs.glsl">
+      <Filter>Shader Files</Filter>
+    </None>
+    <None Include="..\demo\light_vs.glsl">
       <Filter>Shader Files</Filter>
     </None>
   </ItemGroup>

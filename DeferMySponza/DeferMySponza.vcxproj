@@ -63,7 +63,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>..\external\lib\$(Platform)\v$(PlatformToolsetVersion)\$(Configuration)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>opengl32.lib;glfw.lib;libpng.lib;zlib.lib;tcf-vc120-mt-sg.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;glfw.lib;libpng.lib;zlib.lib;tcf-vc120-mt-sg.lib;tsl-vc120-mt-sg.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <ProjectReference>
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
@@ -136,8 +136,10 @@
     <ClInclude Include="ShaderProgram.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\demo\defer_fs.glsl" />
-    <None Include="..\demo\defer_vs.glsl" />
+    <None Include="..\demo\firstpass_fs.glsl" />
+    <None Include="..\demo\firstpass_vs.glsl" />
+    <None Include="..\demo\light_fs.glsl" />
+    <None Include="..\demo\light_vs.glsl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
