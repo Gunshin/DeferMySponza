@@ -20,7 +20,7 @@ uniform sampler2DRect sampler_world_mat;
 
 in Light vs_light;
 
-out vec3 reflected_light;
+out vec4 reflected_light;
 
 void main(void)
 {
@@ -32,7 +32,7 @@ void main(void)
 
     vec3 col = calculateColour(vs_light.position, vs_light.range, position, normal, V);
 
-    reflected_light = vec3(1.0, 0.0, 0.0);//col;
+    reflected_light = vec4(1.0, 0.0, 0.0, 1.0);//col;
 }
 
 vec3 calculateColour(vec3 lightPos_, float lightRange_, vec3 fragPos_, vec3 fragNorm_, vec3 V_)

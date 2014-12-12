@@ -422,7 +422,7 @@ int height)
     {
         // lbuffer colour buffer
         glBindRenderbuffer(GL_RENDERBUFFER, lbufferColourRBOID);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB8, width, height);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA32F, width, height);
         glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
         GLenum lbuffer_status = 0;
@@ -484,11 +484,10 @@ windowViewRender(std::shared_ptr<tygra::Window> window)
 
         // not using these so disable them
         glDisable(GL_BLEND);
-        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
-        //glEnable(GL_STENCIL_TEST);
-        //glStencilFunc(GL_NEVER, 1, ~0); // we are writing 1 to all pixels that the geometry draws into
-        //glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
+        glEnable(GL_STENCIL_TEST);
+        glStencilFunc(GL_ALWAYS, 127, ~0); // we are writing 1 to all pixels that the geometry draws into
+        glStencilOp(GL_ZERO, GL_KEEP, GL_REPLACE);
 
         // the lights are tagged onto the end of the meshes
         for (unsigned int i = 0; i < loadedMeshes.size(); ++i)
@@ -505,13 +504,18 @@ windowViewRender(std::shared_ptr<tygra::Window> window)
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
+	// global lights
+	{
+
+	}
+
     // lets draw the lights
     {
   //      lightProgram.useProgram();
   //      glBindFramebuffer(GL_FRAMEBUFFER, lbufferID);
 
 		//glClearColor(0.f, 0.f, 0.25f, 0.f);
-		//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT); // clear all 3 buffers
+		//glClear(GL_COLOR_BUFFER_BIT); // clear all 3 buffers
 
   //      glEnable(GL_BLEND);
   //      glBlendEquation(GL_FUNC_ADD);
@@ -524,9 +528,9 @@ windowViewRender(std::shared_ptr<tygra::Window> window)
   //      glEnable(GL_CULL_FACE); // enable the culling (not on by default)
   //      glCullFace(GL_FRONT); // set to cull forward facing fragments
 
-  //      glDisable(GL_STENCIL_TEST);
+  //      //glDisable(GL_STENCIL_TEST);
   //      glEnable(GL_STENCIL_TEST);
-  //      glStencilFunc(GL_NOTEQUAL, 0, ~0);
+  //      glStencilFunc(GL_EQUAL, 127, ~0);
   //      glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
   //      glActiveTexture(GL_TEXTURE0);
