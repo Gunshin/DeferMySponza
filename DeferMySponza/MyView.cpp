@@ -116,18 +116,6 @@ windowViewWillStart(std::shared_ptr<tygra::Window> window)
 
     }
 
-    // add the initial light instance data so that the buffer is at least initialised
-    {
-        std::vector<SceneModel::Light> sceneLights = scene_->getAllLights();
-        for (unsigned int i = 0; i < scene_->getAllLights().size(); ++i)
-        {
-            LightData light;
-            light.position = sceneLights[i].getPosition();
-            light.range = sceneLights[i].getRange();
-            lights.push_back(light);
-        }
-    }
-
     // setup material SSBO
     glGenBuffers(1, &bufferMaterials);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, bufferMaterials);
@@ -612,6 +600,8 @@ windowViewRender(std::shared_ptr<tygra::Window> window)
         glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTextureBufferIDS[2]);
         glUniform1i(glGetUniformLocation(lightProgram.getProgramID(), "sampler_world_mat"), 2);
 
+		UpdateLights();
+
         // instance draw the lights woop woop
         glBindVertexArray(lightMesh.vao);
         glDrawElementsInstancedBaseVertex(GL_TRIANGLES,
@@ -659,6 +649,26 @@ void MyView::SetBuffer(glm::mat4 projectMat_, glm::vec3 camPos_)
     glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 
     delete[] buffer;
+}
+
+void MyView::UpdateLights()
+{
+	std::vector<SceneModel::Light> sceneLights = scene_->getAllLights();
+	lights.resize(sceneLights.size());
+	for (unsigned int i = 0; i < scene_->getAllLights().size(); ++i)
+	{
+		LightData light;
+		light.position = sceneLights[i].getPosition();
+		light.range = sceneLights[i].getRange();
+		lights[i] = light;
+	}
+
+	glBindBuffer(GL_ARRAY_BUFFER, lightMesh.instanceVBO);
+	glBufferData(GL_ARRAY_BUFFER,
+		lights.size() * sizeof(LightData),
+		lights.data(),
+		GL_STATIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 glm::vec3 ConvVec3(tsl::Vector3 &vec_)

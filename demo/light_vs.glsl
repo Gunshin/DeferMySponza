@@ -26,5 +26,5 @@ void main(void)
     light.range = lightRange;
 	vs_light = light;
 
-	gl_Position = projectionViewMat * vec4(vertexPosition, 1.0);
+	gl_Position = projectionViewMat * vec4((vertexPosition * lightRange) + lightPosition, 1.0);
 }

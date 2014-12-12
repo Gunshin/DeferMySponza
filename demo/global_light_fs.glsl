@@ -18,7 +18,7 @@ void main(void)
     vec3 mat = texelFetch(sampler_world_mat, pixelCoord).xyz;
 
     vec3 directionalLightColour = vec3(0, 0, 0);
-    directionalLightColour = AddDirectionalLight(directional_light, light_intensity, normal);
+    directionalLightColour = AddDirectionalLight(-directional_light, light_intensity, normal);
 
     reflected_light = directionalLightColour * mat;
 }

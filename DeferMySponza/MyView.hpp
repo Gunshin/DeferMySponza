@@ -100,4 +100,5 @@ private:
     GLuint lbufferColourRBOID;
 
     void SetBuffer(glm::mat4 projectMat_, glm::vec3 camPos_);
+	void UpdateLights();
 };
