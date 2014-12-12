@@ -22,8 +22,6 @@ MyView::
 {
 }
 
-// school purple = 108 39 135
-
 void MyView::
 setScene(std::shared_ptr<const SceneModel::Context> scene)
 {
@@ -46,6 +44,7 @@ windowViewWillStart(std::shared_ptr<tygra::Window> window)
         firstPassProgram.addShaderToProgram(&vs);
         firstPassProgram.addShaderToProgram(&fs);
 
+		// set the channels of the output for this one to be sure
 		glBindFragDataLocation(firstPassProgram.getProgramID(), 0, "position");
 		glBindFragDataLocation(firstPassProgram.getProgramID(), 1, "normal");
 		glBindFragDataLocation(firstPassProgram.getProgramID(), 2, "material");
@@ -54,6 +53,20 @@ windowViewWillStart(std::shared_ptr<tygra::Window> window)
 
         firstPassProgram.useProgram();
     }
+
+	{
+		Shader vs, fs;
+		vs.loadShader("background_vs.glsl", GL_VERTEX_SHADER);
+		fs.loadShader("background_fs.glsl", GL_FRAGMENT_SHADER);
+
+		backgroundProgram.createProgram();
+		backgroundProgram.addShaderToProgram(&vs);
+		backgroundProgram.addShaderToProgram(&fs);
+
+		backgroundProgram.linkProgram();
+
+		backgroundProgram.useProgram();
+	}
 
     {
         Shader vs, fs;
@@ -81,6 +94,25 @@ windowViewWillStart(std::shared_ptr<tygra::Window> window)
 
         lightProgram.useProgram();
     }
+
+	/*
+	
+	preparation for future
+
+	*/
+	{
+		Shader vs, fs;
+		vs.loadShader("postprocess_vs.glsl", GL_VERTEX_SHADER);
+		fs.loadShader("postprocess_fs.glsl", GL_FRAGMENT_SHADER);
+
+		postProcessProgram.createProgram();
+		postProcessProgram.addShaderToProgram(&vs);
+		postProcessProgram.addShaderToProgram(&fs);
+
+		postProcessProgram.linkProgram();
+
+		postProcessProgram.useProgram();
+	}
 
     /*
     generate a map which contains the MaterialID as the key, which leads to the index inside of my vector that the material is contained
@@ -127,9 +159,6 @@ windowViewWillStart(std::shared_ptr<tygra::Window> window)
         firstPassProgram.getProgramID(),
         glGetUniformBlockIndex(firstPassProgram.getProgramID(), "BufferMaterials"),
         1);
-
-    //copy lights data
-    //UpdateLightData();
 
     // set up light SSBO
     glGenBuffers(1, &bufferRender);
@@ -214,6 +243,7 @@ windowViewWillStart(std::shared_ptr<tygra::Window> window)
         lightMesh.element_count = lightMesh.endElementIndex - lightMesh.startElementIndex + 1;
     }
 
+	// set up fullscreen quad
     {
         std::vector<glm::vec2> vertices(4);
         vertices[0] = glm::vec2(-1, -1);
@@ -355,12 +385,15 @@ windowViewWillStart(std::shared_ptr<tygra::Window> window)
 
     }
 
-    glGenFramebuffers(1, &gbufferID);
-    glGenRenderbuffers(1, &depthStencilRBOID);
-    glGenTextures(3, gbufferTextureBufferIDS);
+    glGenFramebuffers(1, &gbufferFBO);
+    glGenRenderbuffers(1, &depthStencilRBO);
+    glGenTextures(3, gbufferTO);
 
-    glGenFramebuffers(1, &lbufferID);
-    glGenRenderbuffers(1, &lbufferColourRBOID);
+    glGenFramebuffers(1, &lbufferFBO);
+	glGenTextures(1, &lbufferTO);
+
+	glGenFramebuffers(1, &postProcessFBO);
+	glGenRenderbuffers(1, &postProcessColourRBO);
 
 }
 
@@ -374,7 +407,7 @@ int height)
 
     {
         // gbuffer position texture
-        glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTextureBufferIDS[0]);
+        glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTO[0]);
         glTexImage2D(
             GL_TEXTURE_RECTANGLE,
             0,
@@ -389,7 +422,7 @@ int height)
         glBindTexture(GL_TEXTURE_RECTANGLE, 0);
 
         // gbuffer normal texture
-        glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTextureBufferIDS[1]);
+        glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTO[1]);
         glTexImage2D(
             GL_TEXTURE_RECTANGLE,
             0,
@@ -404,32 +437,32 @@ int height)
         glBindTexture(GL_TEXTURE_RECTANGLE, 0);
 
         // gbuffer material texture
-        glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTextureBufferIDS[2]);
+        glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTO[2]);
         glTexImage2D(
             GL_TEXTURE_RECTANGLE,
             0,
-            GL_RGB32F,
+            GL_RGBA32F,
             width,
             height,
             0,
-            GL_RGB,
+            GL_RGBA,
             GL_FLOAT,
             NULL
             );
         glBindTexture(GL_TEXTURE_RECTANGLE, 0);
 
         // gbuffer depth stencil buffer
-        glBindRenderbuffer(GL_RENDERBUFFER, depthStencilRBOID);
+        glBindRenderbuffer(GL_RENDERBUFFER, depthStencilRBO);
         glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
         glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
         GLenum gbuffer_status = 0;
-        glBindFramebuffer(GL_FRAMEBUFFER, gbufferID);
+        glBindFramebuffer(GL_FRAMEBUFFER, gbufferFBO);
 
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depthStencilRBOID); // attach depth stencil buffer
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, gbufferTextureBufferIDS[0], 0); // attach position buffer
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_RECTANGLE, gbufferTextureBufferIDS[1], 0); // attach normal buffer
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_RECTANGLE, gbufferTextureBufferIDS[2], 0); // attach material buffer
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depthStencilRBO); // attach depth stencil buffer
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, gbufferTO[0], 0); // attach position buffer
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_RECTANGLE, gbufferTO[1], 0); // attach normal buffer
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_RECTANGLE, gbufferTO[2], 0); // attach material buffer
 
         gbuffer_status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         if (gbuffer_status != GL_FRAMEBUFFER_COMPLETE)
@@ -445,16 +478,27 @@ int height)
     }
 
     {
-        // lbuffer colour buffer
-        glBindRenderbuffer(GL_RENDERBUFFER, lbufferColourRBOID);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB32F, width, height);
-        glBindRenderbuffer(GL_RENDERBUFFER, 0);
+		//TODO: need to change to normal texture2D?
+		// So that we can do a post process effect, we draw into a texture again
+		glBindTexture(GL_TEXTURE_RECTANGLE, lbufferTO);
+		glTexImage2D(
+			GL_TEXTURE_RECTANGLE,
+			0,
+			GL_RGBA32F,
+			width,
+			height,
+			0,
+			GL_RGBA,
+			GL_FLOAT,
+			NULL
+			);
+		glBindTexture(GL_TEXTURE_RECTANGLE, 0);
 
         GLenum lbuffer_status = 0;
-        glBindFramebuffer(GL_FRAMEBUFFER, lbufferID);
+        glBindFramebuffer(GL_FRAMEBUFFER, lbufferFBO);
 
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, lbufferColourRBOID); // attach colour buffer
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depthStencilRBOID); // attach depth stencil buffer
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, lbufferTO, 0); // attach position buffer
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depthStencilRBO); // attach depth stencil buffer
 
         lbuffer_status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
         if (lbuffer_status != GL_FRAMEBUFFER_COMPLETE)
@@ -466,18 +510,43 @@ int height)
         glDrawBuffers(1, buffers);
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
+
+	{
+		// pbuffer colour buffer
+		glBindRenderbuffer(GL_RENDERBUFFER, postProcessColourRBO);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB32F, width, height);
+		glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+		GLenum pbuffer_status = 0;
+		glBindFramebuffer(GL_FRAMEBUFFER, postProcessFBO);
+
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, postProcessColourRBO); // attach colour buffer
+
+		pbuffer_status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		if (pbuffer_status != GL_FRAMEBUFFER_COMPLETE)
+		{
+			tglDebugMessage(GL_DEBUG_SEVERITY_HIGH, "pbuffer not complete");
+		}
+
+		GLenum buffers[] = { GL_COLOR_ATTACHMENT0 };
+		glDrawBuffers(1, buffers);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	}
 }
 
 void MyView::
 windowViewDidStop(std::shared_ptr<tygra::Window> window)
 {
 
-    glDeleteFramebuffers(1, &gbufferID);
-    glDeleteRenderbuffers(1, &depthStencilRBOID);
-    glDeleteTextures(3, gbufferTextureBufferIDS);
+    glDeleteFramebuffers(1, &gbufferFBO);
+    glDeleteRenderbuffers(1, &depthStencilRBO);
+    glDeleteTextures(3, gbufferTO);
 
-    glDeleteFramebuffers(1, &lbufferID);
-    glDeleteRenderbuffers(1, &lbufferColourRBOID);
+    glDeleteFramebuffers(1, &lbufferFBO);
+	glDeleteTextures(1, &lbufferTO);
+
+	glDeleteFramebuffers(1, &postProcessFBO);
+	glDeleteRenderbuffers(1, &postProcessColourRBO);
 
 }
 
@@ -488,8 +557,6 @@ windowViewRender(std::shared_ptr<tygra::Window> window)
     GLint viewport_size[4];
     glGetIntegerv(GL_VIEWPORT, viewport_size);
 
-    
-
     glm::mat4 projectionMatrix = glm::perspective(75.f, aspectRatio, 1.f, 1000.f);
     glm::mat4 viewMatrix = glm::lookAt(scene_->getCamera().getPosition(), scene_->getCamera().getDirection() + scene_->getCamera().getPosition(), glm::vec3(0, 1, 0));
     glm::mat4 projectionViewMatrix = projectionMatrix * viewMatrix;
@@ -499,7 +566,7 @@ windowViewRender(std::shared_ptr<tygra::Window> window)
     // set up the depth and stencil buffers, we are not writing to the onscreen framebuffer, we are filling the relevant data for the light render
     {
         firstPassProgram.useProgram();
-        glBindFramebuffer(GL_FRAMEBUFFER, gbufferID);
+        glBindFramebuffer(GL_FRAMEBUFFER, gbufferFBO);
 
 		glClearColor(0.f, 0.f, 0.25f, 0.f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT); // clear all 3 buffers
@@ -529,13 +596,30 @@ windowViewRender(std::shared_ptr<tygra::Window> window)
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
+	// shade background as scool of computing purple
+	{
+		backgroundProgram.useProgram();
+		glBindFramebuffer(GL_FRAMEBUFFER, lbufferFBO);
+
+		glClearColor(0.f, 0.f, 0.25f, 0.f);
+		glClear(GL_COLOR_BUFFER_BIT); // clear all 3 buffers
+
+		glDisable(GL_DEPTH_TEST); // disable depth test snce we are drawing a full screen quad
+		glDisable(GL_BLEND);
+
+		glEnable(GL_STENCIL_TEST);
+		glStencilFunc(GL_EQUAL, 0, ~0); // equal to background
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+		// draw directional light
+		glBindVertexArray(globalLightMesh.vao);
+		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+	}
+
 	// global lights
 	{
         globalLightProgram.useProgram();
-        glBindFramebuffer(GL_FRAMEBUFFER, lbufferID);
-
-        glClearColor(0.f, 0.f, 0.25f, 0.f);
-        glClear(GL_COLOR_BUFFER_BIT); // clear all 3 buffers
+        glBindFramebuffer(GL_FRAMEBUFFER, lbufferFBO);
 
         glDisable(GL_DEPTH_TEST); // disable depth test snce we are drawing a full screen quad
         glDisable(GL_BLEND);
@@ -544,18 +628,20 @@ windowViewRender(std::shared_ptr<tygra::Window> window)
         glStencilFunc(GL_NOTEQUAL, 0, ~0);
         glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
+		// could remove the glGetUniformLocation, but again, being lazy and fps is still around 100 - 105
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTextureBufferIDS[0]);
+        glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTO[0]);
         glUniform1i(glGetUniformLocation(globalLightProgram.getProgramID(), "sampler_world_position"), 0);
 
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTextureBufferIDS[1]);
+        glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTO[1]);
         glUniform1i(glGetUniformLocation(globalLightProgram.getProgramID(), "sampler_world_normal"), 1);
 
         glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTextureBufferIDS[2]);
+        glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTO[2]);
         glUniform1i(glGetUniformLocation(globalLightProgram.getProgramID(), "sampler_world_mat"), 2);
 
+		// since there are only 2 vecs to pass, im being lazy and doing it this way
         glUniform3fv(glGetUniformLocation(globalLightProgram.getProgramID(), "directional_light"), 1, glm::value_ptr(scene_->getGlobalLightDirection()));
         glUniform3fv(glGetUniformLocation(globalLightProgram.getProgramID(), "light_intensity"), 1, glm::value_ptr(scene_->getGlobalLightIntensity()));
 
@@ -567,12 +653,9 @@ windowViewRender(std::shared_ptr<tygra::Window> window)
     // lets draw the lights
     {
         lightProgram.useProgram();
-        //glBindFramebuffer(GL_FRAMEBUFFER, lbufferID);
-
-		//glClearColor(0.f, 0.f, 0.25f, 0.f);
-		//glClear(GL_COLOR_BUFFER_BIT); // clear all 3 buffers
-
-        glEnable(GL_BLEND);
+        
+		// additive blending
+		glEnable(GL_BLEND);
         glBlendEquation(GL_FUNC_ADD);
         glBlendFunc(GL_ONE, GL_ONE);
 
@@ -583,21 +666,20 @@ windowViewRender(std::shared_ptr<tygra::Window> window)
         glEnable(GL_CULL_FACE); // enable the culling (not on by default)
         glCullFace(GL_FRONT); // set to cull forward facing fragments
 
-        //glDisable(GL_STENCIL_TEST);
         glEnable(GL_STENCIL_TEST);
-        glStencilFunc(GL_NOTEQUAL, 0, ~0);
+        glStencilFunc(GL_NOTEQUAL, 0, ~0); // background is set to 0, we want the geometry pixels
         glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTextureBufferIDS[0]);
+        glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTO[0]);
         glUniform1i(glGetUniformLocation(lightProgram.getProgramID(), "sampler_world_position"), 0);
 
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTextureBufferIDS[1]);
+        glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTO[1]);
         glUniform1i(glGetUniformLocation(lightProgram.getProgramID(), "sampler_world_normal"), 1);
 
         glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTextureBufferIDS[2]);
+        glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTO[2]);
         glUniform1i(glGetUniformLocation(lightProgram.getProgramID(), "sampler_world_mat"), 2);
 
 		UpdateLights();
@@ -618,8 +700,26 @@ windowViewRender(std::shared_ptr<tygra::Window> window)
         glDisable(GL_CULL_FACE);
         glCullFace(GL_BACK);
     }
+
+	// post process shenanigans
+	{
+		postProcessProgram.useProgram();
+		glBindFramebuffer(GL_FRAMEBUFFER, postProcessFBO);
+
+		glClearColor(0.f, 0.f, 0.25f, 0.f);
+		glClear(GL_COLOR_BUFFER_BIT); // clear all 3 buffers
+
+		glDisable(GL_BLEND); // disable blending
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_RECTANGLE, lbufferTO);
+		glUniform1i(glGetUniformLocation(postProcessProgram.getProgramID(), "sampler_world_position"), 0);
+
+		glBindVertexArray(globalLightMesh.vao);
+		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+	}
     
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, lbufferID);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, postProcessFBO);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glBlitFramebuffer(0, 0, viewport_size[2], viewport_size[3], 0, 0, viewport_size[2], viewport_size[3], GL_COLOR_BUFFER_BIT, GL_NEAREST);
 
@@ -671,6 +771,7 @@ void MyView::UpdateLights()
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
+// method fixes damn inconsistencies of this so called 'legacy code'
 glm::vec3 ConvVec3(tsl::Vector3 &vec_)
 {
     return glm::vec3(vec_.x, vec_.y, vec_.z);

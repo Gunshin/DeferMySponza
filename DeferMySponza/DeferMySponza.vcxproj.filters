@@ -133,5 +133,17 @@
     <None Include="..\demo\global_light_vs.glsl">
       <Filter>Shader Files</Filter>
     </None>
+    <None Include="..\demo\background_fs.glsl">
+      <Filter>Shader Files</Filter>
+    </None>
+    <None Include="..\demo\background_vs.glsl">
+      <Filter>Shader Files</Filter>
+    </None>
+    <None Include="..\demo\postprocess_fs.glsl">
+      <Filter>Shader Files</Filter>
+    </None>
+    <None Include="..\demo\postprocess_vs.glsl">
+      <Filter>Shader Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

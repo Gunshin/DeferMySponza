@@ -27,7 +27,7 @@ void main(void)
     ivec2 pixelCoord = ivec2(gl_FragCoord.xy);
     vec3 position = texelFetch(sampler_world_position, pixelCoord).xyz;
     vec3 normal = texelFetch(sampler_world_normal, pixelCoord).xyz;
-	vec4 matColour = texelFetch(sampler_world_mat, pixelCoord).rgba;
+	vec4 matColour = texelFetch(sampler_world_mat, pixelCoord).rgba; // the alpha value is the shininess of the material
 
     vec3 V = normalize(camPosition - position);
 

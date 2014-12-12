@@ -90,14 +90,18 @@ private:
     GLuint bufferRender;
     Mesh lightMesh, globalLightMesh;
 
-    ShaderProgram lightProgram, firstPassProgram, globalLightProgram;
+    ShaderProgram lightProgram, firstPassProgram, globalLightProgram, backgroundProgram, postProcessProgram;
 
-    GLuint gbufferID;
-    GLuint gbufferTextureBufferIDS[3];
-    GLuint depthStencilRBOID;
+    GLuint gbufferFBO;
+    GLuint gbufferTO[3];
+    GLuint depthStencilRBO;
 
-    GLuint lbufferID;
-    GLuint lbufferColourRBOID;
+    GLuint lbufferFBO;
+	GLuint lbufferTO;
+    GLuint lbufferColourRBO;
+
+	GLuint postProcessFBO;
+	GLuint postProcessColourRBO;
 
     void SetBuffer(glm::mat4 projectMat_, glm::vec3 camPos_);
 	void UpdateLights();
