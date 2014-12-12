@@ -53,8 +53,20 @@ windowViewWillStart(std::shared_ptr<tygra::Window> window)
         firstPassProgram.linkProgram();
 
         firstPassProgram.useProgram();
+    }
 
+    {
+        Shader vs, fs;
+        vs.loadShader("global_light_vs.glsl", GL_VERTEX_SHADER);
+        fs.loadShader("global_light_fs.glsl", GL_FRAGMENT_SHADER);
 
+        globalLightProgram.createProgram();
+        globalLightProgram.addShaderToProgram(&vs);
+        globalLightProgram.addShaderToProgram(&fs);
+
+        globalLightProgram.linkProgram();
+
+        globalLightProgram.useProgram();
     }
 
     {
@@ -212,6 +224,31 @@ windowViewWillStart(std::shared_ptr<tygra::Window> window)
         lightMesh.endElementIndex = elements.size() - 1;
         lightMesh.verticeCount = lightMesh.endVerticeIndex - lightMesh.startVerticeIndex;
         lightMesh.element_count = lightMesh.endElementIndex - lightMesh.startElementIndex + 1;
+    }
+
+    {
+        std::vector<glm::vec2> vertices(4);
+        vertices[0] = glm::vec2(-1, -1);
+        vertices[1] = glm::vec2(1, -1);
+        vertices[2] = glm::vec2(1, 1);
+        vertices[3] = glm::vec2(-1, 1);
+
+        glGenBuffers(1, &globalLightMesh.instanceVBO);
+        glBindBuffer(GL_ARRAY_BUFFER, globalLightMesh.instanceVBO);
+        glBufferData(GL_ARRAY_BUFFER,
+            vertices.size() * sizeof(glm::vec2),
+            vertices.data(),
+            GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        glGenVertexArrays(1, &globalLightMesh.vao);
+        glBindVertexArray(globalLightMesh.vao);
+        glBindBuffer(GL_ARRAY_BUFFER, globalLightMesh.instanceVBO);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
+            sizeof(glm::vec2), 0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
     }
 
     // set up vao
@@ -422,7 +459,7 @@ int height)
     {
         // lbuffer colour buffer
         glBindRenderbuffer(GL_RENDERBUFFER, lbufferColourRBOID);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA32F, width, height);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_RGB32F, width, height);
         glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
         GLenum lbuffer_status = 0;
@@ -506,63 +543,93 @@ windowViewRender(std::shared_ptr<tygra::Window> window)
 
 	// global lights
 	{
+        globalLightProgram.useProgram();
+        glBindFramebuffer(GL_FRAMEBUFFER, lbufferID);
 
+        glClearColor(0.f, 0.f, 0.25f, 0.f);
+        glClear(GL_COLOR_BUFFER_BIT); // clear all 3 buffers
+
+        glDisable(GL_DEPTH_TEST); // disable depth test snce we are drawing a full screen quad
+        glDisable(GL_BLEND);
+
+        glEnable(GL_STENCIL_TEST);
+        glStencilFunc(GL_NOTEQUAL, 0, ~0);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTextureBufferIDS[0]);
+        glUniform1i(glGetUniformLocation(globalLightProgram.getProgramID(), "sampler_world_position"), 0);
+
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTextureBufferIDS[1]);
+        glUniform1i(glGetUniformLocation(globalLightProgram.getProgramID(), "sampler_world_normal"), 1);
+
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTextureBufferIDS[2]);
+        glUniform1i(glGetUniformLocation(globalLightProgram.getProgramID(), "sampler_world_mat"), 2);
+
+        glUniform3fv(glGetUniformLocation(globalLightProgram.getProgramID(), "directional_light"), 1, glm::value_ptr(scene_->getGlobalLightDirection()));
+        glUniform3fv(glGetUniformLocation(globalLightProgram.getProgramID(), "light_intensity"), 1, glm::value_ptr(scene_->getGlobalLightIntensity()));
+
+        // draw directional light
+        glBindVertexArray(globalLightMesh.vao);
+        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 	}
 
     // lets draw the lights
     {
-  //      lightProgram.useProgram();
-  //      glBindFramebuffer(GL_FRAMEBUFFER, lbufferID);
+        lightProgram.useProgram();
+        //glBindFramebuffer(GL_FRAMEBUFFER, lbufferID);
 
 		//glClearColor(0.f, 0.f, 0.25f, 0.f);
 		//glClear(GL_COLOR_BUFFER_BIT); // clear all 3 buffers
 
-  //      glEnable(GL_BLEND);
-  //      glBlendEquation(GL_FUNC_ADD);
-  //      glBlendFunc(GL_ONE, GL_ONE);
+        glEnable(GL_BLEND);
+        glBlendEquation(GL_FUNC_ADD);
+        glBlendFunc(GL_ONE, GL_ONE);
 
-  //      glEnable(GL_DEPTH_TEST);// enable the depth test for use with lights
-  //      glDepthMask(GL_FALSE);// disable depth writes since we dont want the lights to mess with the depth buffer
-  //      glDepthFunc(GL_GREATER);// set the depth test to check for in front of the back fragments so that we can light correctly
+        glEnable(GL_DEPTH_TEST);// enable the depth test for use with lights
+        glDepthMask(GL_FALSE);// disable depth writes since we dont want the lights to mess with the depth buffer
+        glDepthFunc(GL_GREATER);// set the depth test to check for in front of the back fragments so that we can light correctly
 
-  //      glEnable(GL_CULL_FACE); // enable the culling (not on by default)
-  //      glCullFace(GL_FRONT); // set to cull forward facing fragments
+        glEnable(GL_CULL_FACE); // enable the culling (not on by default)
+        glCullFace(GL_FRONT); // set to cull forward facing fragments
 
-  //      //glDisable(GL_STENCIL_TEST);
-  //      glEnable(GL_STENCIL_TEST);
-  //      glStencilFunc(GL_EQUAL, 127, ~0);
-  //      glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+        //glDisable(GL_STENCIL_TEST);
+        glEnable(GL_STENCIL_TEST);
+        glStencilFunc(GL_NOTEQUAL, 0, ~0);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
-  //      glActiveTexture(GL_TEXTURE0);
-  //      glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTextureBufferIDS[0]);
-  //      glUniform1i(glGetUniformLocation(lightProgram.getProgramID(), "sampler_world_position"), 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTextureBufferIDS[0]);
+        glUniform1i(glGetUniformLocation(lightProgram.getProgramID(), "sampler_world_position"), 0);
 
-  //      glActiveTexture(GL_TEXTURE1);
-  //      glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTextureBufferIDS[1]);
-  //      glUniform1i(glGetUniformLocation(lightProgram.getProgramID(), "sampler_world_normal"), 1);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTextureBufferIDS[1]);
+        glUniform1i(glGetUniformLocation(lightProgram.getProgramID(), "sampler_world_normal"), 1);
 
-  //      glActiveTexture(GL_TEXTURE2);
-  //      glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTextureBufferIDS[3]);
-  //      glUniform1i(glGetUniformLocation(lightProgram.getProgramID(), "sampler_world_mat"), 2);
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_RECTANGLE, gbufferTextureBufferIDS[2]);
+        glUniform1i(glGetUniformLocation(lightProgram.getProgramID(), "sampler_world_mat"), 2);
 
-  //      // instance draw the lights woop woop
-  //      glBindVertexArray(lightMesh.vao);
-  //      glDrawElementsInstancedBaseVertex(GL_TRIANGLES,
-  //          lightMesh.element_count,
-  //          GL_UNSIGNED_INT,
-  //          TGL_BUFFER_OFFSET(lightMesh.startElementIndex * sizeof(int)),
-  //          lights.size(),
-  //          lightMesh.startVerticeIndex);
+        // instance draw the lights woop woop
+        glBindVertexArray(lightMesh.vao);
+        glDrawElementsInstancedBaseVertex(GL_TRIANGLES,
+            lightMesh.element_count,
+            GL_UNSIGNED_INT,
+            TGL_BUFFER_OFFSET(lightMesh.startElementIndex * sizeof(int)),
+            lights.size(),
+            lightMesh.startVerticeIndex);
 
-  //      glDisable(GL_STENCIL_TEST);
-  //      glDepthMask(GL_TRUE);
-  //      glDepthFunc(GL_LEQUAL);
+        glDisable(GL_STENCIL_TEST);
+        glDepthMask(GL_TRUE);
+        glDepthFunc(GL_LEQUAL);
 
-  //      glDisable(GL_CULL_FACE);
-  //      glCullFace(GL_BACK);
+        glDisable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
     }
     
-    glBindFramebuffer(GL_READ_FRAMEBUFFER, gbufferID);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, lbufferID);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     glBlitFramebuffer(0, 0, viewport_size[2], viewport_size[3], 0, 0, viewport_size[2], viewport_size[3], GL_COLOR_BUFFER_BIT, GL_NEAREST);
 

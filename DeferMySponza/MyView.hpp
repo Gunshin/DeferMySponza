@@ -88,9 +88,9 @@ private:
     };
     std::vector<LightData> lights;
     GLuint bufferRender;
-    Mesh lightMesh;
+    Mesh lightMesh, globalLightMesh;
 
-    ShaderProgram lightProgram, firstPassProgram;
+    ShaderProgram lightProgram, firstPassProgram, globalLightProgram;
 
     GLuint gbufferID;
     GLuint gbufferTextureBufferIDS[3];

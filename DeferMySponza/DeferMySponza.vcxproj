@@ -138,6 +138,8 @@
   <ItemGroup>
     <None Include="..\demo\firstpass_fs.glsl" />
     <None Include="..\demo\firstpass_vs.glsl" />
+    <None Include="..\demo\global_light_fs.glsl" />
+    <None Include="..\demo\global_light_vs.glsl" />
     <None Include="..\demo\light_fs.glsl" />
     <None Include="..\demo\light_vs.glsl" />
   </ItemGroup>
