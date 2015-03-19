@@ -8,6 +8,7 @@
 #include <memory>
 
 #include "ShaderProgram.hpp"
+#include "QueryTimer.hpp"
 
 class MyView : public tygra::WindowViewDelegate
 {
@@ -103,6 +104,11 @@ private:
 	GLuint postProcessFBO;
 	GLuint postProcessColourRBO;
 
+    GLuint queryID;
+
     void SetBuffer(glm::mat4 projectMat_, glm::vec3 camPos_);
 	void UpdateLights();
+
+    std::shared_ptr<QueryTimer> gbufferTimer, backgroundTimer, globalLightsTimer, lbufferTimer, postTimer;
+    std::vector<GLuint64> gbufferTimes, backgroundTimes, globalLightsTimes, lbufferTimes, postTimes;
 };

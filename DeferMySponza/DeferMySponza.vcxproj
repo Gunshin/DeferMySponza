@@ -116,6 +116,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MyController.cpp" />
     <ClCompile Include="MyView.cpp" />
+    <ClCompile Include="QueryTimer.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />
   </ItemGroup>
@@ -132,6 +133,7 @@
     <ClInclude Include="..\external\src\SceneModel\FirstPersonMovement.hpp" />
     <ClInclude Include="MyController.hpp" />
     <ClInclude Include="MyView.hpp" />
+    <ClInclude Include="QueryTimer.hpp" />
     <ClInclude Include="Shader.hpp" />
     <ClInclude Include="ShaderProgram.hpp" />
   </ItemGroup>

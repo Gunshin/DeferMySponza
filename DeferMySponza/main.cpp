@@ -16,8 +16,8 @@ int main(int argc, char *argv[])
         auto window = tygra::Window::mainWindow();
         window->setController(controller);
 
-        const int window_width = 1280;
-        const int window_height = 720;
+        const int window_width = 1920;
+        const int window_height = 1080;
         const int number_of_samples = 1;
 
         if (window->open(window_width, window_height, number_of_samples, true))
